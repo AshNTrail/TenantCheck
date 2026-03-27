@@ -1,0 +1,21 @@
+CREATE TABLE landlords (
+  id         UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email      TEXT NOT NULL,
+  full_name  TEXT,
+  phone      TEXT,
+  status     TEXT DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE landlords ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Landlords can read own record"
+  ON landlords FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Landlords can insert own record"
+  ON landlords FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Admin can read all landlords"
+  ON landlords FOR SELECT USING (true);
+
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS landlord_id UUID REFERENCES landlords(id);
