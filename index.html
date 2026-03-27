@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TenantCheck — Landlord Review Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- ✅ Supabase JS SDK (loaded from CDN, no install needed) -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root {
+    --navy: #0f1c2e;
+    --navy-mid: #1a2d45;
+    --teal: #00b894;
+    --teal-dark: #00a381;
+    --amber: #f39c12;
+    --red: #e74c3c;
+    --slate: #8899aa;
+    --light: #f4f7fa;
+    --white: #ffffff;
+    --card-bg: #192a3e;
+    --border: rgba(255,255,255,0.08);
+    --shadow: 0 8px 40px rgba(0,0,0,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--navy-mid);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; }
+  .logo span { color: var(--teal); }
+  .header-actions { display: flex; gap: 12px; }
+
+  .btn {
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-ghost { background: transparent; border: 1.5px solid var(--border); color: var(--slate); }
+  .btn-ghost:hover { border-color: var(--teal); color: var(--teal); }
+  .btn-primary { background: var(--teal); color: var(--white); }
+  .btn-primary:hover { background: var(--teal-dark); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 80px 32px 60px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -100px; left: 50%;
+    transform: translateX(-50%);
+    width: 800px; height: 500px;
+    background: radial-gradient(ellipse, rgba(0,184,148,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-tag {
+    display: inline-block;
+    background: rgba(0,184,148,0.12);
+    border: 1px solid rgba(0,184,148,0.3);
+    color: var(--teal);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    font-weight: 900;
+    line-height: 1.12;
+    margin-bottom: 16px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero h1 em { color: var(--teal); font-style: normal; }
+  .hero p {
+    color: var(--slate);
+    font-size: 1.05rem;
+    max-width: 480px;
+    margin: 0 auto 40px;
+    line-height: 1.7;
+  }
+
+  /* ── SEARCH ── */
+  .search-container {
+    max-width: 680px;
+    margin: 0 auto 20px;
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+  }
+  .search-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .search-field { flex: 1; min-width: 140px; }
+  .search-field label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin-bottom: 6px;
+  }
+  .search-field input, .search-field select {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-field input::placeholder { color: rgba(136,153,170,0.5); }
+  .search-field input:focus, .search-field select:focus { border-color: var(--teal); }
+  .search-field select option { background: var(--navy-mid); color: var(--white); }
+  .search-btn {
+    align-self: flex-end;
+    padding: 11px 28px;
+    background: var(--teal);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .search-btn:hover { background: var(--teal-dark); }
+
+  /* ── STATS ── */
+  .stats { display: flex; justify-content: center; gap: 48px; padding: 32px; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-num { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--teal); }
+  .stat-label { font-size: 0.82rem; color: var(--slate); margin-top: 2px; }
+
+  /* ── MAIN ── */
+  .main { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; }
+
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+  .filter-btn {
+    padding: 7px 18px;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--slate);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--teal); color: var(--teal); background: rgba(0,184,148,0.08); }
+
+  /* ── CARDS ── */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+  .tenant-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .tenant-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    height: 3px; width: 100%;
+    background: var(--teal);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .tenant-card:hover { transform: translateY(-4px); border-color: rgba(0,184,148,0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+  .tenant-card:hover::before { opacity: 1; }
+
+  .card-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
+  .avatar {
+    width: 50px; height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    font-family: 'Playfair Display', serif;
+  }
+  .card-info { flex: 1; }
+  .tenant-name { font-weight: 600; font-size: 1.05rem; margin-bottom: 3px; }
+  .tenant-location { font-size: 0.8rem; color: var(--slate); }
+
+  .rating-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(243,156,18,0.12);
+    border: 1px solid rgba(243,156,18,0.25);
+    padding: 5px 11px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .rating-num { font-weight: 700; font-size: 1rem; color: var(--amber); }
+  .review-count { font-size: 0.75rem; color: var(--slate); margin-top: 2px; text-align: center; }
+
+  .score-bars { margin: 14px 0; }
+  .score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .score-label { font-size: 0.78rem; color: var(--slate); width: 100px; flex-shrink: 0; }
+  .score-track { flex: 1; height: 5px; background: rgba(255,255,255,0.07); border-radius: 100px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 100px; background: var(--teal); }
+  .score-val { font-size: 0.78rem; color: var(--slate); width: 24px; text-align: right; }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .tag { padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 500; }
+  .tag-pro { background: rgba(0,184,148,0.12); color: var(--teal); border: 1px solid rgba(0,184,148,0.2); }
+  .tag-con { background: rgba(231,76,60,0.1); color: #ff6b5b; border: 1px solid rgba(231,76,60,0.2); }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .reviews-link { font-size: 0.82rem; color: var(--teal); font-weight: 600; cursor: pointer; }
+  .verified-badge { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--slate); }
+  .verified-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+
+  /* ── LOADING / EMPTY ── */
+  .loading-state, .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--slate);
+    grid-column: 1/-1;
+  }
+  .loading-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid rgba(0,184,148,0.2);
+    border-top-color: var(--teal);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+  .empty-state h3 { font-family: 'Playfair Display', serif; color: var(--white); margin-bottom: 8px; }
+
+  /* ── NOTICE ── */
+  .notice {
+    background: rgba(243,156,18,0.08);
+    border: 1px solid rgba(243,156,18,0.2);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 0.85rem;
+    color: rgba(243,156,18,0.9);
+    margin-bottom: 28px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--teal);
+    color: white;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); }
+
+  /* ── MODALS ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--navy-mid);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal::-webkit-scrollbar { width: 6px; }
+  .modal::-webkit-scrollbar-track { background: transparent; }
+  .modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .modal-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: var(--slate);
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .modal-close:hover { background: rgba(231,76,60,0.2); color: var(--red); }
+
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; margin-bottom: 4px; }
+  .modal-sub { color: var(--slate); font-size: 0.9rem; margin-bottom: 24px; }
+
+  .review-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .review-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .reviewer-name { font-weight: 600; font-size: 0.95rem; }
+  .review-date { font-size: 0.78rem; color: var(--slate); }
+  .review-stars { color: var(--amber); font-size: 0.85rem; }
+  .review-text { font-size: 0.9rem; line-height: 1.65; color: rgba(255,255,255,0.8); margin: 8px 0; }
+
+  /* ── FORMS ── */
+  .form-group { margin-bottom: 18px; }
+  .form-group label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin-bottom: 8px;
+  }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(136,153,170,0.5); }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--teal); }
+  .form-group textarea { resize: vertical; min-height: 90px; }
+  .form-group select option { background: var(--navy-mid); }
+
+  .star-rating { display: flex; gap: 8px; margin-top: 4px; }
+  .star-btn {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: rgba(255,255,255,0.15);
+    transition: color 0.15s, transform 0.15s;
+  }
+  .star-btn:hover, .star-btn.selected { color: var(--amber); }
+  .star-btn:hover { transform: scale(1.2); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-sub { font-size: 0.78rem; color: var(--slate); margin-top: 4px; }
+  .submit-row { display: flex; gap: 12px; margin-top: 8px; }
+
+  @media (max-width: 600px) {
+    .two-col { grid-template-columns: 1fr; }
+    .search-row { flex-direction: column; }
+    .hero { padding: 48px 20px 40px; }
+    .stats { gap: 28px; }
+    header { padding: 12px 16px; }
+    .logo { font-size: 1.3rem; }
+  }
+
+  /* ── ADMIN PANEL ── */
+  .admin-link {
+    font-size: 0.75rem;
+    color: rgba(136,153,170,0.4);
+    cursor: pointer;
+    user-select: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: color 0.2s;
+    letter-spacing: 1px;
+  }
+  .admin-link:hover { color: var(--slate); }
+
+  /* Login screen */
+  .admin-login {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--navy);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .admin-login.open { display: flex; }
+  .admin-login-box {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow);
+    animation: slideUp 0.3s ease;
+  }
+  .admin-login-box h2 { font-family: 'Playfair Display',serif; font-size: 1.8rem; margin-bottom: 6px; }
+  .admin-login-box p { color: var(--slate); font-size: 0.9rem; margin-bottom: 28px; }
+  .admin-login-box input {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    outline: none;
+    margin-bottom: 14px;
+    text-align: center;
+    letter-spacing: 3px;
+    transition: border-color 0.2s;
+  }
+  .admin-login-box input:focus { border-color: var(--teal); }
+  .admin-login-error { color: var(--red); font-size: 0.85rem; margin-bottom: 12px; min-height: 20px; }
+
+  /* Admin dashboard full screen */
+  .admin-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--navy);
+    z-index: 400;
+    overflow-y: auto;
+    flex-direction: column;
+  }
+  .admin-panel.open { display: flex; }
+
+  .admin-header {
+    background: var(--navy-mid);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .admin-header-left { display: flex; align-items: center; gap: 16px; }
+  .admin-badge {
+    background: rgba(231,76,60,0.15);
+    border: 1px solid rgba(231,76,60,0.3);
+    color: #ff6b5b;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+  }
+
+  .admin-body { padding: 32px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+  /* Admin stats row */
+  .admin-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .admin-stat-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+  }
+  .admin-stat-card .label { font-size: 0.75rem; color: var(--slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .admin-stat-card .value { font-family: 'Playfair Display',serif; font-size: 1.9rem; font-weight: 700; color: var(--white); }
+  .admin-stat-card .sub { font-size: 0.78rem; color: var(--slate); margin-top: 2px; }
+
+  /* Admin tabs */
+  .admin-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px; width: fit-content; }
+  .admin-tab { padding: 9px 22px; border-radius: 9px; border: none; background: transparent; color: var(--slate); font-family: 'DM Sans',sans-serif; font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; }
+  .admin-tab.active { background: var(--navy-mid); color: var(--white); }
+
+  /* Admin table */
+  .admin-table-wrap { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .admin-table { width: 100%; border-collapse: collapse; }
+  .admin-table th { background: rgba(255,255,255,0.04); padding: 12px 16px; text-align: left; font-size: 0.75rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--slate); border-bottom: 1px solid var(--border); }
+  .admin-table td { padding: 14px 16px; font-size: 0.88rem; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+  .admin-table tr:last-child td { border-bottom: none; }
+  .admin-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .admin-search-bar {
+    width: 100%;
+    max-width: 360px;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    color: var(--white);
+    font-family: 'DM Sans',sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+  .admin-search-bar:focus { border-color: var(--teal); }
+  .admin-search-bar::placeholder { color: rgba(136,153,170,0.5); }
+
+  /* Action buttons in table */
+  .act-btn {
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: none;
+    font-family: 'DM Sans',sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-right: 4px;
+  }
+  .act-verify   { background: rgba(0,184,148,0.15); color: var(--teal); }
+  .act-verify:hover { background: rgba(0,184,148,0.3); }
+  .act-unverify { background: rgba(136,153,170,0.1); color: var(--slate); }
+  .act-unverify:hover { background: rgba(136,153,170,0.2); }
+  .act-delete   { background: rgba(231,76,60,0.12); color: #ff6b5b; }
+  .act-delete:hover { background: rgba(231,76,60,0.25); }
+  .act-view     { background: rgba(243,156,18,0.12); color: var(--amber); }
+  .act-view:hover { background: rgba(243,156,18,0.25); }
+
+  .badge-verified { display:inline-block; background:rgba(0,184,148,0.15); color:var(--teal); border:1px solid rgba(0,184,148,0.3); padding:2px 10px; border-radius:100px; font-size:0.72rem; font-weight:600; }
+  .badge-unverified { display:inline-block; background:rgba(136,153,170,0.1); color:var(--slate); border:1px solid rgba(136,153,170,0.2); padding:2px 10px; border-radius:100px; font-size:0.72rem; font-weight:600; }
+  .badge-rating { display:inline-block; background:rgba(243,156,18,0.12); color:var(--amber); border:1px solid rgba(243,156,18,0.2); padding:2px 10px; border-radius:100px; font-size:0.78rem; font-weight:700; }
+
+  .admin-empty { text-align:center; padding:48px; color:var(--slate); }
+  .admin-section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:12px; }
+  .admin-section-title { font-family:'Playfair Display',serif; font-size:1.2rem; }
+
+  /* Edit tenant modal inside admin */
+  .edit-field { margin-bottom: 14px; }
+  .edit-field label { display:block; font-size:0.72rem; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--slate); margin-bottom:6px; }
+  .edit-field input, .edit-field select {
+    width:100%; background:rgba(255,255,255,0.05); border:1.5px solid var(--border); border-radius:8px; padding:10px 14px; color:var(--white); font-family:'DM Sans',sans-serif; font-size:0.9rem; outline:none; transition:border-color 0.2s;
+  }
+  .edit-field input:focus, .edit-field select:focus { border-color:var(--teal); }
+  .edit-field select option { background:var(--navy-mid); }
+
+  .confirm-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:600;
+    align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px);
+  }
+  .confirm-overlay.open { display:flex; }
+  .confirm-box { background:var(--navy-mid); border:1.5px solid var(--border); border-radius:16px; padding:32px; max-width:380px; width:100%; text-align:center; animation:slideUp 0.2s ease; }
+  .confirm-box h3 { font-family:'Playfair Display',serif; font-size:1.3rem; margin-bottom:10px; }
+  .confirm-box p { color:var(--slate); font-size:0.9rem; margin-bottom:24px; line-height:1.6; }
+  .confirm-row { display:flex; gap:10px; justify-content:center; }
+</style>
+
+</head>
+<body>
+
+<!-- HEADER -->
+
+<header>
+  <div class="logo">Tenant<span>Check</span></div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="openAddReview()">+ Add Review</button>
+    <button class="btn btn-primary" onclick="openAddTenant()">List a Tenant</button>
+    <span class="admin-link" onclick="openAdminLogin()" title="Admin">⚙</span>
+  </div>
+</header>
+
+<!-- HERO -->
+
+<div class="hero">
+  <div class="hero-tag">🏠 For Landlords, By Landlords</div>
+  <h1>Know Your Tenant <em>Before</em> You Sign</h1>
+  <p>Search verified tenant reviews by location. Make confident rental decisions with real landlord feedback.</p>
+
+  <div class="search-container">
+    <div class="search-row">
+      <div class="search-field">
+        <label>ZIP Code</label>
+        <input type="text" id="searchZip" placeholder="e.g. 90210" maxlength="10">
+      </div>
+      <div class="search-field">
+        <label>City / County</label>
+        <input type="text" id="searchCity" placeholder="e.g. Los Angeles">
+      </div>
+      <div class="search-field">
+        <label>State</label>
+        <select id="searchState">
+          <option value="">All States</option>
+          <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+          <option>CA</option><option>CO</option><option>CT</option><option>DE</option>
+          <option>FL</option><option>GA</option><option>HI</option><option>ID</option>
+          <option>IL</option><option>IN</option><option>IA</option><option>KS</option>
+          <option>KY</option><option>LA</option><option>ME</option><option>MD</option>
+          <option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+          <option>MO</option><option>MT</option><option>NE</option><option>NV</option>
+          <option>NH</option><option>NJ</option><option>NM</option><option>NY</option>
+          <option>NC</option><option>ND</option><option>OH</option><option>OK</option>
+          <option>OR</option><option>PA</option><option>RI</option><option>SC</option>
+          <option>SD</option><option>TN</option><option>TX</option><option>UT</option>
+          <option>VT</option><option>VA</option><option>WA</option><option>WV</option>
+          <option>WI</option><option>WY</option>
+        </select>
+      </div>
+      <button class="search-btn" onclick="handleSearch()">🔍 Search</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+
+<div class="stats">
+  <div class="stat"><div class="stat-num" id="statTenants">—</div><div class="stat-label">Tenant Profiles</div></div>
+  <div class="stat"><div class="stat-num" id="statReviews">—</div><div class="stat-label">Verified Reviews</div></div>
+  <div class="stat"><div class="stat-num">50</div><div class="stat-label">States Covered</div></div>
+  <div class="stat"><div class="stat-num" id="statAvg">—</div><div class="stat-label">Avg Landlord Rating Given</div></div>
+</div>
+
+<!-- MAIN -->
+
+<div class="main">
+  <div class="notice">
+    ⚠️ <span>Reviews are submitted by landlords and are not independently verified. Always conduct your own background check. Fair Housing laws apply — do not discriminate based on protected classes.</span>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title" id="resultsTitle">Recent Profiles</div>
+    <div style="font-size:0.85rem;color:var(--slate)" id="resultsCount"></div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterCards(this,'all')">All</button>
+    <button class="filter-btn" onclick="filterCards(this,'5')">⭐ 5 Stars</button>
+    <button class="filter-btn" onclick="filterCards(this,'4')">4+ Stars</button>
+    <button class="filter-btn" onclick="filterCards(this,'low')">Low Rated</button>
+    <button class="filter-btn" onclick="filterCards(this,'verified')">✓ Verified</button>
+  </div>
+
+  <div class="cards-grid" id="cardsGrid">
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading tenant profiles…</p>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW REVIEWS MODAL -->
+
+<div class="modal-overlay" id="reviewModal" onclick="closeOnOverlay(event,'reviewModal')">
+  <div class="modal" id="reviewModalContent">
+    <button class="modal-close" onclick="closeModal('reviewModal')">✕</button>
+    <div id="reviewModalBody"></div>
+  </div>
+</div>
+
+<!-- ADD REVIEW MODAL -->
+
+<div class="modal-overlay" id="addReviewModal" onclick="closeOnOverlay(event,'addReviewModal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('addReviewModal')">✕</button>
+    <div class="modal-title">Write a Review</div>
+    <div class="modal-sub">Share your rental experience with other landlords</div>
+
+```
+<div class="form-group">
+  <label>Search for Existing Tenant</label>
+  <input type="text" id="rev_search" placeholder="Type name, city, or ZIP…" oninput="searchTenantForReview()">
+  <div id="rev_search_results" style="margin-top:6px"></div>
+</div>
+
+<div id="rev_selected_banner" style="display:none;background:rgba(0,184,148,0.1);border:1px solid rgba(0,184,148,0.3);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:0.9rem">
+  Reviewing: <strong id="rev_selected_name"></strong>
+  <span style="float:right;cursor:pointer;color:var(--slate)" onclick="clearSelectedTenant()">✕ change</span>
+</div>
+
+<div id="rev_new_tenant_fields">
+  <div class="form-group">
+    <label>Tenant Name (or initials for privacy)</label>
+    <input type="text" id="rev_name" placeholder="e.g. John D." />
+  </div>
+  <div class="two-col">
+    <div class="form-group"><label>ZIP Code</label><input type="text" id="rev_zip" placeholder="90210" maxlength="10" /></div>
+    <div class="form-group"><label>City</label><input type="text" id="rev_city" placeholder="Los Angeles" /></div>
+  </div>
+  <div class="two-col">
+    <div class="form-group"><label>County</label><input type="text" id="rev_county" placeholder="Los Angeles County" /></div>
+    <div class="form-group">
+      <label>State</label>
+      <select id="rev_state"><option value="">Select State</option>
+        <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+        <option>CA</option><option>CO</option><option>CT</option><option>FL</option>
+        <option>GA</option><option>IL</option><option>IN</option><option>MA</option>
+        <option>MI</option><option>MN</option><option>MO</option><option>NV</option>
+        <option>NJ</option><option>NY</option><option>NC</option><option>OH</option>
+        <option>OR</option><option>PA</option><option>TN</option><option>TX</option>
+        <option>VA</option><option>WA</option><option>WI</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="form-group">
+  <label>Overall Rating</label>
+  <div class="star-rating" id="starRating">
+    <button class="star-btn" onclick="setRating(1)">★</button>
+    <button class="star-btn" onclick="setRating(2)">★</button>
+    <button class="star-btn" onclick="setRating(3)">★</button>
+    <button class="star-btn" onclick="setRating(4)">★</button>
+    <button class="star-btn" onclick="setRating(5)">★</button>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="form-group"><label>Paid Rent On Time (1–5)</label><input type="number" id="rev_payment" min="1" max="5" placeholder="5" /></div>
+  <div class="form-group"><label>Property Care (1–5)</label><input type="number" id="rev_care" min="1" max="5" placeholder="5" /></div>
+</div>
+<div class="two-col">
+  <div class="form-group"><label>Communication (1–5)</label><input type="number" id="rev_comm" min="1" max="5" placeholder="5" /></div>
+  <div class="form-group"><label>Lease Compliance (1–5)</label><input type="number" id="rev_lease" min="1" max="5" placeholder="5" /></div>
+</div>
+<div class="form-group"><label>Pros (comma separated)</label><input type="text" id="rev_pros" placeholder="Always on time, Kept property clean" /></div>
+<div class="form-group"><label>Cons (comma separated)</label><input type="text" id="rev_cons" placeholder="Late on rent twice, Pet damage" /></div>
+<div class="form-group"><label>Full Review</label><textarea id="rev_text" placeholder="Describe your overall experience…"></textarea></div>
+<div class="form-group">
+  <label>Would You Rent to Them Again?</label>
+  <select id="rev_again">
+    <option value="">Select…</option>
+    <option value="yes">✅ Yes, definitely</option>
+    <option value="maybe">🤔 Maybe</option>
+    <option value="no">❌ No</option>
+  </select>
+</div>
+
+<div class="form-sub" style="margin-bottom:16px">Your identity is kept private. Only "Verified Landlord" is shown publicly.</div>
+
+<div class="submit-row">
+  <button class="btn btn-primary" style="flex:1" id="submitReviewBtn" onclick="submitReview()">Submit Review</button>
+  <button class="btn btn-ghost" onclick="closeModal('addReviewModal')">Cancel</button>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- ADD TENANT MODAL -->
+
+<div class="modal-overlay" id="addTenantModal" onclick="closeOnOverlay(event,'addTenantModal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('addTenantModal')">✕</button>
+    <div class="modal-title">List a New Tenant</div>
+    <div class="modal-sub">Create a profile so other landlords can find and review them</div>
+
+```
+<div class="form-group"><label>Tenant Name (or initials)</label><input type="text" id="nt_name" placeholder="e.g. Sarah M." /></div>
+<div class="two-col">
+  <div class="form-group"><label>ZIP Code</label><input type="text" id="nt_zip" placeholder="90210" maxlength="10" /></div>
+  <div class="form-group"><label>City</label><input type="text" id="nt_city" placeholder="Los Angeles" /></div>
+</div>
+<div class="two-col">
+  <div class="form-group"><label>County</label><input type="text" id="nt_county" placeholder="Los Angeles County" /></div>
+  <div class="form-group">
+    <label>State</label>
+    <select id="nt_state"><option value="">Select State</option>
+      <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+      <option>CA</option><option>CO</option><option>CT</option><option>FL</option>
+      <option>GA</option><option>IL</option><option>IN</option><option>MA</option>
+      <option>MI</option><option>MN</option><option>MO</option><option>NV</option>
+      <option>NJ</option><option>NY</option><option>NC</option><option>OH</option>
+      <option>OR</option><option>PA</option><option>TN</option><option>TX</option>
+      <option>VA</option><option>WA</option><option>WI</option>
+    </select>
+  </div>
+</div>
+<div class="form-group"><label>Rental Period</label><input type="text" id="nt_period" placeholder="e.g. Jan 2021 – Dec 2023" /></div>
+
+<div class="submit-row">
+  <button class="btn btn-primary" style="flex:1" id="submitTenantBtn" onclick="submitTenant()">Create Profile</button>
+  <button class="btn btn-ghost" onclick="closeModal('addTenantModal')">Cancel</button>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- TOAST -->
+
+<div class="toast" id="toast"></div>
+
+<!-- ===== ADMIN LOGIN SCREEN ===== -->
+
+<div class="admin-login" id="adminLogin">
+  <div class="admin-login-box">
+    <div style="font-size:2.5rem;margin-bottom:12px">🔐</div>
+    <h2>Admin Access</h2>
+    <p>Enter your admin password to manage TenantCheck</p>
+    <input type="password" id="adminPasswordInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPassword()">
+    <div class="admin-login-error" id="adminLoginError"></div>
+    <button class="btn btn-primary" style="width:100%;padding:14px" onclick="checkAdminPassword()">Login</button>
+    <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="closeAdminLogin()">Cancel</button>
+  </div>
+</div>
+
+<!-- ===== ADMIN PANEL ===== -->
+
+<div class="admin-panel" id="adminPanel">
+
+  <div class="admin-header">
+    <div class="admin-header-left">
+      <div class="logo">Tenant<span>Check</span></div>
+      <span class="admin-badge">Admin</span>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <span style="font-size:0.82rem;color:var(--slate)">Logged in as Admin</span>
+      <button class="btn btn-ghost" onclick="logoutAdmin()">Log Out</button>
+    </div>
+  </div>
+
+  <div class="admin-body">
+
+```
+<!-- Admin Stats -->
+<div class="admin-stats" id="adminStats">
+  <div class="admin-stat-card">
+    <div class="label">Total Tenants</div>
+    <div class="value" id="aStat_tenants">—</div>
+    <div class="sub">profiles in database</div>
+  </div>
+  <div class="admin-stat-card">
+    <div class="label">Total Reviews</div>
+    <div class="value" id="aStat_reviews">—</div>
+    <div class="sub">submitted by landlords</div>
+  </div>
+  <div class="admin-stat-card">
+    <div class="label">Verified Tenants</div>
+    <div class="value" id="aStat_verified">—</div>
+    <div class="sub">manually verified</div>
+  </div>
+  <div class="admin-stat-card">
+    <div class="label">Avg Rating</div>
+    <div class="value" id="aStat_avg">—</div>
+    <div class="sub">across all reviews</div>
+  </div>
+  <div class="admin-stat-card">
+    <div class="label">Unreviewed</div>
+    <div class="value" id="aStat_unreviewed">—</div>
+    <div class="sub">tenants with 0 reviews</div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="admin-tabs">
+  <button class="admin-tab active" onclick="switchAdminTab(this,'tenants')">🏠 Tenants</button>
+  <button class="admin-tab" onclick="switchAdminTab(this,'reviews')">⭐ Reviews</button>
+</div>
+
+<!-- TENANTS TAB -->
+<div id="adminTabTenants">
+  <div class="admin-section-header">
+    <div class="admin-section-title">All Tenant Profiles</div>
+    <input class="admin-search-bar" id="adminTenantSearch" placeholder="🔍 Search by name, city, state, ZIP…" oninput="renderAdminTenants()">
+  </div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Tenant</th>
+          <th>Location</th>
+          <th>Rating</th>
+          <th>Reviews</th>
+          <th>Status</th>
+          <th>Added</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="adminTenantBody">
+        <tr><td colspan="7" class="admin-empty">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- REVIEWS TAB -->
+<div id="adminTabReviews" style="display:none">
+  <div class="admin-section-header">
+    <div class="admin-section-title">All Reviews</div>
+    <input class="admin-search-bar" id="adminReviewSearch" placeholder="🔍 Search by tenant name or review text…" oninput="renderAdminReviews()">
+  </div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Tenant</th>
+          <th>Rating</th>
+          <th>Review</th>
+          <th>Rent Again</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="adminReviewBody">
+        <tr><td colspan="6" class="admin-empty">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- EDIT TENANT MODAL (inside admin) -->
+
+<div class="modal-overlay" id="editTenantModal" onclick="closeOnOverlay(event,'editTenantModal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('editTenantModal')">✕</button>
+    <div class="modal-title">Edit Tenant Profile</div>
+    <div class="modal-sub" id="editTenantSub"></div>
+    <input type="hidden" id="edit_tenant_id">
+    <div class="two-col">
+      <div class="edit-field"><label>Name</label><input type="text" id="edit_name"></div>
+      <div class="edit-field"><label>ZIP</label><input type="text" id="edit_zip" maxlength="10"></div>
+    </div>
+    <div class="two-col">
+      <div class="edit-field"><label>City</label><input type="text" id="edit_city"></div>
+      <div class="edit-field"><label>County</label><input type="text" id="edit_county"></div>
+    </div>
+    <div class="two-col">
+      <div class="edit-field">
+        <label>State</label>
+        <select id="edit_state">
+          <option value="">Select</option>
+          <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+          <option>CA</option><option>CO</option><option>CT</option><option>FL</option>
+          <option>GA</option><option>IL</option><option>IN</option><option>MA</option>
+          <option>MI</option><option>MN</option><option>MO</option><option>NV</option>
+          <option>NJ</option><option>NY</option><option>NC</option><option>OH</option>
+          <option>OR</option><option>PA</option><option>TN</option><option>TX</option>
+          <option>VA</option><option>WA</option><option>WI</option>
+        </select>
+      </div>
+      <div class="edit-field"><label>Rental Period</label><input type="text" id="edit_period" placeholder="Jan 2021 – Dec 2023"></div>
+    </div>
+    <div class="edit-field">
+      <label>Verified Status</label>
+      <select id="edit_verified">
+        <option value="false">⚪ Unverified</option>
+        <option value="true">✅ Verified</option>
+      </select>
+    </div>
+    <div class="submit-row" style="margin-top:20px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditTenant()">Save Changes</button>
+      <button class="btn btn-ghost" onclick="closeModal('editTenantModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE DIALOG -->
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div style="font-size:2rem;margin-bottom:12px" id="confirmIcon">🗑️</div>
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmMsg">This action cannot be undone.</p>
+    <div class="confirm-row">
+      <button class="btn" style="background:var(--red);color:white;padding:10px 28px" id="confirmYesBtn">Delete</button>
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     JAVASCRIPT
+     ===================================================== -->
+
+<script>
+// ╔══════════════════════════════════════════════╗
+// ║  🔑 PASTE YOUR SUPABASE CREDENTIALS HERE    ║
+// ║  See SETUP_GUIDE.txt for instructions        ║
+// ╚══════════════════════════════════════════════╝
+const SUPABASE_URL  = 'https://dfgyamvhqfswfpzokads.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_0HVJ3zAk_QPSZUPi6zW5XA_mFfZR_xb';
+
+// Initialize Supabase client
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── STATE ──────────────────────────────────────
+let allTenants    = [];   // full list from DB
+let displayList   = [];   // current filtered/searched list
+let currentFilter = 'all';
+let currentRating = 0;
+let selectedTenantId = null;  // for add-review modal
+
+// ── INIT ───────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadTenants();
+  loadStats();
+});
+
+// ── LOAD TENANTS ───────────────────────────────
+async function loadTenants() {
+  const { data, error } = await db
+    .from('tenant_stats')   // our computed view
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error loading tenants:', error);
+    showToast('Could not load tenants. Check your Supabase credentials.', true);
+    document.getElementById('cardsGrid').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <h3>Connection Error</h3>
+        <p>Check your Supabase URL and anon key in index.html</p>
+      </div>`;
+    return;
+  }
+
+  allTenants  = data || [];
+  displayList = allTenants;
+  applyFilter();
+}
+
+// ── LOAD STATS ─────────────────────────────────
+async function loadStats() {
+  // tenant count
+  const { count: tenantCount } = await db
+    .from('tenants')
+    .select('*', { count: 'exact', head: true });
+
+  // review count + avg rating
+  const { data: reviewData } = await db
+    .from('reviews')
+    .select('rating');
+
+  if (tenantCount !== null)
+    document.getElementById('statTenants').textContent = tenantCount.toLocaleString();
+
+  if (reviewData) {
+    document.getElementById('statReviews').textContent = reviewData.length.toLocaleString();
+    if (reviewData.length > 0) {
+      const avg = reviewData.reduce((s, r) => s + r.rating, 0) / reviewData.length;
+      document.getElementById('statAvg').textContent = avg.toFixed(1) + '★';
+    }
+  }
+}
+
+// ── SEARCH ─────────────────────────────────────
+async function handleSearch() {
+  const zip   = document.getElementById('searchZip').value.trim();
+  const city  = document.getElementById('searchCity').value.trim().toLowerCase();
+  const state = document.getElementById('searchState').value;
+
+  if (!zip && !city && !state) {
+    displayList = allTenants;
+    document.getElementById('resultsTitle').textContent = 'Recent Profiles';
+    applyFilter();
+    return;
+  }
+
+  let query = db.from('tenant_stats').select('*');
+
+  if (zip)   query = query.ilike('zip', `${zip}%`);
+  if (state) query = query.eq('state', state);
+  if (city)  query = query.or(`city.ilike.%${city}%,county.ilike.%${city}%`);
+
+  const { data, error } = await query.order('avg_rating', { ascending: false });
+
+  if (error) { showToast('Search error: ' + error.message, true); return; }
+
+  displayList = data || [];
+  const loc = [city || zip, state].filter(Boolean).join(', ') || 'your search';
+  document.getElementById('resultsTitle').textContent = `Results for "${loc}"`;
+  applyFilter();
+}
+
+// ── FILTER ─────────────────────────────────────
+function filterCards(btn, type) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = type;
+  applyFilter();
+}
+
+function applyFilter() {
+  let list = [...displayList];
+
+  if (currentFilter === '5')        list = list.filter(t => parseFloat(t.avg_rating) === 5);
+  else if (currentFilter === '4')   list = list.filter(t => parseFloat(t.avg_rating) >= 4);
+  else if (currentFilter === 'low') list = list.filter(t => parseFloat(t.avg_rating) < 3 && t.review_count > 0);
+  else if (currentFilter === 'verified') list = list.filter(t => t.verified);
+
+  renderCards(list);
+}
+
+// ── RENDER CARDS ───────────────────────────────
+function renderCards(list) {
+  const grid = document.getElementById('cardsGrid');
+  document.getElementById('resultsCount').textContent =
+    `Showing ${list.length} profile${list.length !== 1 ? 's' : ''}`;
+
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <h3>No profiles found</h3>
+      <p>Try a different location or add the first tenant in this area.</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="openAddTenant()">+ List a Tenant</button>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(t => {
+    const rating = parseFloat(t.avg_rating) || 0;
+    const payment = parseFloat(t.avg_payment) || 0;
+    const care    = parseFloat(t.avg_care) || 0;
+    const comm    = parseFloat(t.avg_communication) || 0;
+    const lease   = parseFloat(t.avg_lease) || 0;
+    const pros    = (t.all_pros || []).slice(0, 3);
+    const cons    = (t.all_cons || []).slice(0, 2);
+    const count   = parseInt(t.review_count) || 0;
+
+    const barColor = v => v >= 4 ? 'var(--teal)' : v >= 3 ? 'var(--amber)' : v > 0 ? 'var(--red)' : 'rgba(255,255,255,0.1)';
+
+    const proTags = pros.map(p => `<span class="tag tag-pro">✓ ${p}</span>`).join('');
+    const conTags = cons.map(c => `<span class="tag tag-con">✗ ${c}</span>`).join('');
+
+    return `<div class="tenant-card" onclick="openReviews('${t.id}')">
+      <div class="card-top">
+        <div class="avatar" style="background:${t.color}20;color:${t.color};border:1.5px solid ${t.color}40">${t.initials}</div>
+        <div class="card-info">
+          <div class="tenant-name">${t.name}</div>
+          <div class="tenant-location">📍 ${t.city}${t.county ? ', ' + t.county : ''}, ${t.state} ${t.zip}</div>
+        </div>
+        <div>
+          ${count > 0 ? `<div class="rating-badge"><span class="rating-num">${rating.toFixed(1)}</span><span style="color:var(--amber)">★</span></div>` : '<div class="rating-badge" style="opacity:0.4"><span style="font-size:0.75rem;color:var(--slate)">No reviews</span></div>'}
+          <div class="review-count">${count} review${count !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+
+      ${count > 0 ? `<div class="score-bars">
+        <div class="score-row"><span class="score-label">Rent Payment</span><div class="score-track"><div class="score-fill" style="width:${payment/5*100}%;background:${barColor(payment)}"></div></div><span class="score-val">${payment || '—'}</span></div>
+        <div class="score-row"><span class="score-label">Property Care</span><div class="score-track"><div class="score-fill" style="width:${care/5*100}%;background:${barColor(care)}"></div></div><span class="score-val">${care || '—'}</span></div>
+        <div class="score-row"><span class="score-label">Communication</span><div class="score-track"><div class="score-fill" style="width:${comm/5*100}%;background:${barColor(comm)}"></div></div><span class="score-val">${comm || '—'}</span></div>
+        <div class="score-row"><span class="score-label">Lease Compliance</span><div class="score-track"><div class="score-fill" style="width:${lease/5*100}%;background:${barColor(lease)}"></div></div><span class="score-val">${lease || '—'}</span></div>
+      </div>` : '<div style="padding:14px 0;color:var(--slate);font-size:0.85rem;text-align:center">Be the first to leave a review</div>'}
+
+      <div class="tags">${proTags}${conTags}</div>
+
+      <div class="card-footer">
+        <span class="reviews-link">${count > 0 ? `View all ${count} reviews →` : 'Add first review →'}</span>
+        <span class="verified-badge">
+          ${t.verified ? '<span class="verified-dot"></span> Verified' : '⚪ Unverified'}
+        </span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── VIEW REVIEWS MODAL ─────────────────────────
+async function openReviews(tenantId) {
+  document.getElementById('reviewModalBody').innerHTML = `<div style="text-align:center;padding:40px"><div class="loading-spinner"></div><p style="color:var(--slate)">Loading reviews…</p></div>`;
+  document.getElementById('reviewModal').classList.add('open');
+
+  const { data: tenant } = await db.from('tenant_stats').select('*').eq('id', tenantId).single();
+  const { data: reviews } = await db.from('reviews').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false });
+
+  if (!tenant) { document.getElementById('reviewModalBody').innerHTML = '<p>Error loading tenant.</p>'; return; }
+
+  const rating  = parseFloat(tenant.avg_rating) || 0;
+  const payment = parseFloat(tenant.avg_payment) || 0;
+  const care    = parseFloat(tenant.avg_care) || 0;
+  const comm    = parseFloat(tenant.avg_communication) || 0;
+  const lease   = parseFloat(tenant.avg_lease) || 0;
+  const count   = parseInt(tenant.review_count) || 0;
+  const pros    = tenant.all_pros || [];
+  const cons    = tenant.all_cons || [];
+
+  const againIcon = { yes: '✅', maybe: '🤔', no: '❌' };
+  const againLabel = { yes: 'Yes', maybe: 'Maybe', no: 'No' };
+  const barColor = v => v >= 4 ? 'var(--teal)' : v >= 3 ? 'var(--amber)' : v > 0 ? 'var(--red)' : 'rgba(255,255,255,0.1)';
+
+  const reviewsHTML = (reviews || []).map(r => `
+    <div class="review-item">
+      <div class="review-header">
+        <div>
+          <div class="reviewer-name">${r.reviewer_note || 'Verified Landlord'}</div>
+          <div class="review-date">${new Date(r.created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+        </div>
+        <div class="review-stars">${stars(r.rating)} (${r.rating}.0)</div>
+      </div>
+      ${r.review_text ? `<div class="review-text">${r.review_text}</div>` : ''}
+      ${r.pros?.length ? `<div class="tags" style="margin-bottom:6px">${r.pros.map(p=>`<span class="tag tag-pro">✓ ${p}</span>`).join('')}</div>` : ''}
+      ${r.cons?.length ? `<div class="tags" style="margin-bottom:6px">${r.cons.map(c=>`<span class="tag tag-con">✗ ${c}</span>`).join('')}</div>` : ''}
+      ${r.rent_again ? `<div style="font-size:0.8rem;color:var(--slate);margin-top:6px">Would rent again: ${againIcon[r.rent_again]} ${againLabel[r.rent_again]}</div>` : ''}
+    </div>`).join('') || '<div style="text-align:center;color:var(--slate);padding:20px">No reviews yet — be the first!</div>';
+
+  document.getElementById('reviewModalBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
+      <div class="avatar" style="background:${tenant.color}20;color:${tenant.color};border:1.5px solid ${tenant.color}40;width:56px;height:56px;font-size:1.4rem">${tenant.initials}</div>
+      <div>
+        <div class="modal-title" style="margin-bottom:2px">${tenant.name}</div>
+        <div class="modal-sub" style="margin-bottom:0">📍 ${tenant.city}${tenant.county?', '+tenant.county:''}, ${tenant.state} ${tenant.zip}</div>
+      </div>
+    </div>
+
+    ${count > 0 ? `<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:14px;background:rgba(255,255,255,0.04);border-radius:10px;border:1px solid var(--border)">
+      <div style="text-align:center;min-width:70px">
+        <div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:var(--amber)">${rating.toFixed(1)}</div>
+        <div style="color:var(--amber);font-size:1rem">${stars(Math.round(rating))}</div>
+        <div style="font-size:0.75rem;color:var(--slate)">${count} review${count!==1?'s':''}</div>
+      </div>
+      <div style="flex:1">
+        ${[['Rent Payment',payment],['Property Care',care],['Communication',comm],['Lease Compliance',lease]].map(([l,v])=>`
+          <div class="score-row"><span class="score-label">${l}</span><div class="score-track"><div class="score-fill" style="width:${v/5*100}%;background:${barColor(v)}"></div></div><span class="score-val">${v||'—'}</span></div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${pros.length || cons.length ? `<div style="margin-bottom:16px">
+      <div style="font-size:0.78rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--slate);margin-bottom:8px">Summary</div>
+      <div class="tags">${pros.map(p=>`<span class="tag tag-pro">✓ ${p}</span>`).join('')}${cons.map(c=>`<span class="tag tag-con">✗ ${c}</span>`).join('')}</div>
+    </div>` : ''}
+
+    <div style="font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:14px">All Reviews</div>
+    ${reviewsHTML}
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="closeModal('reviewModal');openAddReviewForTenant('${tenantId}','${tenant.name}')">+ Write a Review for ${tenant.name}</button>
+  `;
+}
+
+// ── ADD REVIEW MODAL ───────────────────────────
+function openAddReview() {
+  resetReviewForm();
+  document.getElementById('addReviewModal').classList.add('open');
+}
+
+function openAddReviewForTenant(id, name) {
+  resetReviewForm();
+  selectedTenantId = id;
+  document.getElementById('rev_selected_name').textContent = name;
+  document.getElementById('rev_selected_banner').style.display = 'block';
+  document.getElementById('rev_new_tenant_fields').style.display = 'none';
+  document.getElementById('rev_search').style.display = 'none';
+  document.getElementById('addReviewModal').classList.add('open');
+}
+
+function resetReviewForm() {
+  selectedTenantId = null;
+  currentRating = 0;
+  ['rev_name','rev_zip','rev_city','rev_county','rev_text','rev_pros','rev_cons','rev_search'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['rev_payment','rev_care','rev_comm','rev_lease'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('rev_state').value = '';
+  document.getElementById('rev_again').value = '';
+  document.getElementById('rev_selected_banner').style.display = 'none';
+  document.getElementById('rev_new_tenant_fields').style.display = 'block';
+  document.getElementById('rev_search').style.display = 'block';
+  document.getElementById('rev_search_results').innerHTML = '';
+  document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('selected'));
+}
+
+function clearSelectedTenant() {
+  selectedTenantId = null;
+  document.getElementById('rev_selected_banner').style.display = 'none';
+  document.getElementById('rev_new_tenant_fields').style.display = 'block';
+  document.getElementById('rev_search').style.display = 'block';
+}
+
+async function searchTenantForReview() {
+  const q = document.getElementById('rev_search').value.trim();
+  const container = document.getElementById('rev_search_results');
+  if (q.length < 2) { container.innerHTML = ''; return; }
+
+  const { data } = await db.from('tenants').select('id,name,city,state,zip')
+    .or(`name.ilike.%${q}%,city.ilike.%${q}%,zip.ilike.%${q}%`)
+    .limit(5);
+
+  if (!data || data.length === 0) { container.innerHTML = ''; return; }
+
+  container.innerHTML = data.map(t => `
+    <div onclick="selectTenantForReview('${t.id}','${t.name}')"
+      style="padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-top:4px;font-size:0.9rem;transition:background 0.15s"
+      onmouseover="this.style.background='rgba(0,184,148,0.1)'"
+      onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+      <strong>${t.name}</strong> <span style="color:var(--slate)">· ${t.city}, ${t.state} ${t.zip}</span>
+    </div>`).join('');
+}
+
+function selectTenantForReview(id, name) {
+  selectedTenantId = id;
+  document.getElementById('rev_selected_name').textContent = name;
+  document.getElementById('rev_selected_banner').style.display = 'block';
+  document.getElementById('rev_new_tenant_fields').style.display = 'none';
+  document.getElementById('rev_search').style.display = 'none';
+  document.getElementById('rev_search_results').innerHTML = '';
+}
+
+function setRating(n) {
+  currentRating = n;
+  document.querySelectorAll('.star-btn').forEach((b, i) => b.classList.toggle('selected', i < n));
+}
+
+async function submitReview() {
+  if (currentRating === 0) { showToast('Please select a star rating.', true); return; }
+
+  const btn = document.getElementById('submitReviewBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  let tenantId = selectedTenantId;
+
+  // Create new tenant if not selecting existing
+  if (!tenantId) {
+    const name = document.getElementById('rev_name').value.trim();
+    if (!name) { showToast('Please enter a tenant name.', true); btn.disabled=false; btn.textContent='Submit Review'; return; }
+    const zip   = document.getElementById('rev_zip').value.trim() || 'N/A';
+    const city  = document.getElementById('rev_city').value.trim() || 'Unknown';
+    const county= document.getElementById('rev_county').value.trim() || null;
+    const state = document.getElementById('rev_state').value || 'N/A';
+    const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const colors = ['#1a6b5a','#4a1a6b','#6b3a1a','#1a3d6b','#1a6b3d','#6b1a3d'];
+    const color  = colors[Math.floor(Math.random()*colors.length)];
+
+    const { data: newTenant, error: tErr } = await db.from('tenants')
+      .insert([{ name, initials, color, zip, city, county, state, verified: false }])
+      .select().single();
+
+    if (tErr) { showToast('Error creating tenant: ' + tErr.message, true); btn.disabled=false; btn.textContent='Submit Review'; return; }
+    tenantId = newTenant.id;
+  }
+
+  const pros = document.getElementById('rev_pros').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const cons = document.getElementById('rev_cons').value.split(',').map(s=>s.trim()).filter(Boolean);
+
+  const { error: rErr } = await db.from('reviews').insert([{
+    tenant_id:     tenantId,
+    reviewer_note: 'Verified Landlord',
+    rating:        currentRating,
+    payment:       parseFloat(document.getElementById('rev_payment').value) || currentRating,
+    care:          parseFloat(document.getElementById('rev_care').value)    || currentRating,
+    communication: parseFloat(document.getElementById('rev_comm').value)    || currentRating,
+    lease:         parseFloat(document.getElementById('rev_lease').value)   || currentRating,
+    pros:          pros.length ? pros : null,
+    cons:          cons.length ? cons : null,
+    review_text:   document.getElementById('rev_text').value.trim() || null,
+    rent_again:    document.getElementById('rev_again').value || null,
+  }]);
+
+  if (rErr) { showToast('Error submitting review: ' + rErr.message, true); btn.disabled=false; btn.textContent='Submit Review'; return; }
+
+  closeModal('addReviewModal');
+  showToast('✅ Review submitted! Thank you.');
+  await loadTenants();
+  await loadStats();
+  btn.disabled=false;
+  btn.textContent='Submit Review';
+}
+
+// ── ADD TENANT MODAL ───────────────────────────
+function openAddTenant() {
+  ['nt_name','nt_zip','nt_city','nt_county','nt_period'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('nt_state').value = '';
+  document.getElementById('addTenantModal').classList.add('open');
+}
+
+async function submitTenant() {
+  const name = document.getElementById('nt_name').value.trim();
+  if (!name) { showToast('Please enter a tenant name.', true); return; }
+
+  const btn = document.getElementById('submitTenantBtn');
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+
+  const zip    = document.getElementById('nt_zip').value.trim()    || 'N/A';
+  const city   = document.getElementById('nt_city').value.trim()   || 'Unknown';
+  const county = document.getElementById('nt_county').value.trim() || null;
+  const state  = document.getElementById('nt_state').value         || 'N/A';
+  const period = document.getElementById('nt_period').value.trim() || null;
+  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const colors = ['#1a6b5a','#4a1a6b','#6b3a1a','#1a3d6b','#1a6b3d','#6b1a3d'];
+  const color  = colors[Math.floor(Math.random()*colors.length)];
+
+  const { error } = await db.from('tenants')
+    .insert([{ name, initials, color, zip, city, county, state, rental_period: period, verified: false }]);
+
+  if (error) { showToast('Error: ' + error.message, true); btn.disabled=false; btn.textContent='Create Profile'; return; }
+
+  closeModal('addTenantModal');
+  showToast(`✅ Profile created for ${name}!`);
+  await loadTenants();
+  await loadStats();
+  btn.disabled=false;
+  btn.textContent='Create Profile';
+}
+
+// ── HELPERS ────────────────────────────────────
+function stars(n) {
+  let s = '';
+  for (let i=1;i<=5;i++) s += i<=n ? '★' : '☆';
+  return s;
+}
+
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError?' error':'');
+  void t.offsetWidth;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  🔑 SET YOUR ADMIN PASSWORD HERE            ║
+// ║  Change this to something only you know!     ║
+// ╚══════════════════════════════════════════════╝
+const ADMIN_PASSWORD = 'TenantCheck2024!';
+
+// ── ADMIN STATE ────────────────────────────────
+let isAdmin = false;
+let adminTenants = [];
+let adminReviews = [];
+
+// ── ADMIN LOGIN ────────────────────────────────
+function openAdminLogin() {
+  document.getElementById('adminPasswordInput').value = '';
+  document.getElementById('adminLoginError').textContent = '';
+  document.getElementById('adminLogin').classList.add('open');
+  setTimeout(() => document.getElementById('adminPasswordInput').focus(), 100);
+}
+
+function closeAdminLogin() {
+  document.getElementById('adminLogin').classList.remove('open');
+}
+
+function checkAdminPassword() {
+  const val = document.getElementById('adminPasswordInput').value;
+  if (val === ADMIN_PASSWORD) {
+    isAdmin = true;
+    document.getElementById('adminLogin').classList.remove('open');
+    openAdminPanel();
+  } else {
+    document.getElementById('adminLoginError').textContent = '❌ Incorrect password. Try again.';
+    document.getElementById('adminPasswordInput').value = '';
+    document.getElementById('adminPasswordInput').focus();
+  }
+}
+
+function logoutAdmin() {
+  isAdmin = false;
+  document.getElementById('adminPanel').classList.remove('open');
+  showToast('Logged out of admin.');
+}
+
+// ── OPEN ADMIN PANEL ───────────────────────────
+async function openAdminPanel() {
+  document.getElementById('adminPanel').classList.add('open');
+  await loadAdminData();
+}
+
+async function loadAdminData() {
+  // Load tenants with stats
+  const { data: tenantData } = await db
+    .from('tenant_stats')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  adminTenants = tenantData || [];
+
+  // Load all reviews with tenant name join
+  const { data: reviewData } = await db
+    .from('reviews')
+    .select('*, tenants(name)')
+    .order('created_at', { ascending: false });
+
+  adminReviews = reviewData || [];
+
+  updateAdminStats();
+  renderAdminTenants();
+  renderAdminReviews();
+}
+
+// ── ADMIN STATS ────────────────────────────────
+function updateAdminStats() {
+  const totalTenants   = adminTenants.length;
+  const totalReviews   = adminReviews.length;
+  const verified       = adminTenants.filter(t => t.verified).length;
+  const unreviewed     = adminTenants.filter(t => parseInt(t.review_count) === 0).length;
+  const avgRating      = adminReviews.length
+    ? (adminReviews.reduce((s,r) => s + r.rating, 0) / adminReviews.length).toFixed(1)
+    : '—';
+
+  document.getElementById('aStat_tenants').textContent   = totalTenants;
+  document.getElementById('aStat_reviews').textContent   = totalReviews;
+  document.getElementById('aStat_verified').textContent  = verified;
+  document.getElementById('aStat_avg').textContent       = avgRating + (adminReviews.length ? '★' : '');
+  document.getElementById('aStat_unreviewed').textContent= unreviewed;
+}
+
+// ── TABS ───────────────────────────────────────
+function switchAdminTab(btn, tab) {
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('adminTabTenants').style.display = tab === 'tenants' ? 'block' : 'none';
+  document.getElementById('adminTabReviews').style.display = tab === 'reviews' ? 'block' : 'none';
+}
+
+// ── RENDER TENANTS TABLE ───────────────────────
+function renderAdminTenants() {
+  const q = (document.getElementById('adminTenantSearch').value || '').toLowerCase();
+  const list = adminTenants.filter(t =>
+    !q ||
+    t.name.toLowerCase().includes(q) ||
+    t.city.toLowerCase().includes(q) ||
+    (t.state || '').toLowerCase().includes(q) ||
+    (t.zip || '').includes(q) ||
+    (t.county || '').toLowerCase().includes(q)
+  );
+
+  const tbody = document.getElementById('adminTenantBody');
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="admin-empty">No tenants found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(t => {
+    const rating  = parseFloat(t.avg_rating) || 0;
+    const count   = parseInt(t.review_count) || 0;
+    const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:34px;height:34px;border-radius:8px;background:${t.color}20;color:${t.color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0">${t.initials}</div>
+          <div>
+            <div style="font-weight:600">${t.name}</div>
+            <div style="font-size:0.75rem;color:var(--slate)">${t.rental_period || ''}</div>
+          </div>
+        </div>
+      </td>
+      <td style="color:var(--slate);font-size:0.85rem">${t.city}${t.county?', '+t.county:''}, ${t.state} ${t.zip}</td>
+      <td>${count > 0 ? `<span class="badge-rating">${rating.toFixed(1)}★</span>` : '<span style="color:var(--slate);font-size:0.8rem">No reviews</span>'}</td>
+      <td style="text-align:center;font-weight:600">${count}</td>
+      <td>${t.verified ? '<span class="badge-verified">✓ Verified</span>' : '<span class="badge-unverified">Unverified</span>'}</td>
+      <td style="color:var(--slate);font-size:0.82rem">${dateStr}</td>
+      <td>
+        <button class="act-btn act-view" onclick="adminViewTenant('${t.id}')">View</button>
+        <button class="act-btn act-${t.verified?'unverify':'verify'}" onclick="adminToggleVerify('${t.id}',${t.verified})">${t.verified ? 'Unverify' : '✓ Verify'}</button>
+        <button class="act-btn act-view" style="background:rgba(100,160,255,0.12);color:#6ab4ff" onclick="openEditTenant('${t.id}')">Edit</button>
+        <button class="act-btn act-delete" onclick="adminDeleteTenant('${t.id}','${t.name.replace(/'/g,"\\'")}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RENDER REVIEWS TABLE ───────────────────────
+function renderAdminReviews() {
+  const q = (document.getElementById('adminReviewSearch').value || '').toLowerCase();
+  const list = adminReviews.filter(r => {
+    const tenantName = r.tenants?.name || '';
+    return !q ||
+      tenantName.toLowerCase().includes(q) ||
+      (r.review_text || '').toLowerCase().includes(q);
+  });
+
+  const tbody = document.getElementById('adminReviewBody');
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="admin-empty">No reviews found.</td></tr>`;
+    return;
+  }
+
+  const againIcon = { yes: '✅ Yes', maybe: '🤔 Maybe', no: '❌ No' };
+
+  tbody.innerHTML = list.map(r => {
+    const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    const tenantName = r.tenants?.name || 'Unknown';
+    const snippet = r.review_text ? (r.review_text.length > 80 ? r.review_text.slice(0,80)+'…' : r.review_text) : '<span style="color:var(--slate);font-style:italic">No text</span>';
+    const prosHTML = r.pros?.length ? `<div style="margin-top:4px">${r.pros.slice(0,2).map(p=>`<span class="tag tag-pro" style="font-size:0.7rem">✓ ${p}</span>`).join(' ')}</div>` : '';
+    const consHTML = r.cons?.length ? `<div style="margin-top:2px">${r.cons.slice(0,2).map(c=>`<span class="tag tag-con" style="font-size:0.7rem">✗ ${c}</span>`).join(' ')}</div>` : '';
+    return `<tr>
+      <td style="font-weight:600">${tenantName}</td>
+      <td><span class="badge-rating">${r.rating}★</span></td>
+      <td style="max-width:280px">
+        <div style="font-size:0.85rem;color:rgba(255,255,255,0.8)">${snippet}</div>
+        ${prosHTML}${consHTML}
+      </td>
+      <td style="font-size:0.85rem">${againIcon[r.rent_again] || '—'}</td>
+      <td style="color:var(--slate);font-size:0.82rem">${dateStr}</td>
+      <td>
+        <button class="act-btn act-delete" onclick="adminDeleteReview('${r.id}','${tenantName.replace(/'/g,"\\'")}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── ADMIN ACTIONS ──────────────────────────────
+async function adminToggleVerify(tenantId, currentlyVerified) {
+  const newVal = !currentlyVerified;
+  const { error } = await db.from('tenants').update({ verified: newVal }).eq('id', tenantId);
+  if (error) { showToast('Error: ' + error.message, true); return; }
+  showToast(newVal ? '✅ Tenant verified!' : 'Tenant unverified.');
+  await loadAdminData();
+  await loadTenants(); // refresh public view too
+}
+
+function adminViewTenant(tenantId) {
+  document.getElementById('adminPanel').classList.remove('open');
+  openReviews(tenantId);
+}
+
+function adminDeleteTenant(tenantId, name) {
+  showConfirm(
+    '🗑️',
+    `Delete "${name}"?`,
+    'This will permanently delete the tenant profile AND all their reviews. This cannot be undone.',
+    'Delete Everything',
+    async () => {
+      const { error } = await db.from('tenants').delete().eq('id', tenantId);
+      if (error) { showToast('Error: ' + error.message, true); return; }
+      showToast(`🗑️ ${name} deleted.`);
+      await loadAdminData();
+      await loadTenants();
+      await loadStats();
+    }
+  );
+}
+
+function adminDeleteReview(reviewId, tenantName) {
+  showConfirm(
+    '🗑️',
+    'Delete this review?',
+    `Remove this review for "${tenantName}"? This cannot be undone and will update their average rating.`,
+    'Delete Review',
+    async () => {
+      const { error } = await db.from('reviews').delete().eq('id', reviewId);
+      if (error) { showToast('Error: ' + error.message, true); return; }
+      showToast('🗑️ Review deleted.');
+      await loadAdminData();
+      await loadTenants();
+      await loadStats();
+    }
+  );
+}
+
+// ── EDIT TENANT ────────────────────────────────
+function openEditTenant(tenantId) {
+  const t = adminTenants.find(x => x.id === tenantId);
+  if (!t) return;
+  document.getElementById('edit_tenant_id').value   = t.id;
+  document.getElementById('editTenantSub').textContent = `Editing profile for ${t.name}`;
+  document.getElementById('edit_name').value   = t.name;
+  document.getElementById('edit_zip').value    = t.zip;
+  document.getElementById('edit_city').value   = t.city;
+  document.getElementById('edit_county').value = t.county || '';
+  document.getElementById('edit_state').value  = t.state;
+  document.getElementById('edit_period').value = t.rental_period || '';
+  document.getElementById('edit_verified').value = t.verified ? 'true' : 'false';
+  document.getElementById('editTenantModal').classList.add('open');
+}
+
+async function saveEditTenant() {
+  const id = document.getElementById('edit_tenant_id').value;
+  const name = document.getElementById('edit_name').value.trim();
+  if (!name) { showToast('Name is required.', true); return; }
+
+  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const updates = {
+    name,
+    initials,
+    zip:           document.getElementById('edit_zip').value.trim() || 'N/A',
+    city:          document.getElementById('edit_city').value.trim() || 'Unknown',
+    county:        document.getElementById('edit_county').value.trim() || null,
+    state:         document.getElementById('edit_state').value || 'N/A',
+    rental_period: document.getElementById('edit_period').value.trim() || null,
+    verified:      document.getElementById('edit_verified').value === 'true',
+  };
+
+  const { error } = await db.from('tenants').update(updates).eq('id', id);
+  if (error) { showToast('Error: ' + error.message, true); return; }
+
+  closeModal('editTenantModal');
+  showToast('✅ Tenant updated!');
+  await loadAdminData();
+  await loadTenants();
+}
+
+// ── CONFIRM DIALOG ─────────────────────────────
+let confirmCallback = null;
+function showConfirm(icon, title, msg, btnLabel, callback) {
+  document.getElementById('confirmIcon').textContent  = icon;
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent   = msg;
+  document.getElementById('confirmYesBtn').textContent = btnLabel;
+  confirmCallback = callback;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+document.getElementById('confirmYesBtn').addEventListener('click', async () => {
+  closeConfirm();
+  if (confirmCallback) await confirmCallback();
+  confirmCallback = null;
+});
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+}
+
+// Close admin panel with Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('confirmOverlay').classList.remove('open');
+  }
+});
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeOnOverlay(e, id) { if (e.target.id === id) closeModal(id); }
+
+// Search on Enter key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.activeElement.id.startsWith('search')) handleSearch();
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+});
+</script>
+
+</body>
+</html>
